@@ -2,7 +2,6 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   @moduledoc """
   Credo check to ensure binary pattern matches follow common forms
   """
-  require Logger
   use Credo.Check, base_priority: :high, category: :warning
 
   # Default modifier pairs that can be shortened
@@ -12,6 +11,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     {:bitstring, 1}
   ]
 
+  @impl Credo.Check
   def run(source_file, params \\ []) do
     issue_meta = IssueMeta.for(source_file, params)
     Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
