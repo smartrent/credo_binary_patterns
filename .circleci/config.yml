@@ -1,0 +1,55 @@
+version: 2.1
+
+latest: &latest
+  pattern: "^1.15.*-erlang-26.*$"
+
+jobs:
+  build-test:
+    parameters:
+      tag:
+        type: string
+    docker:
+      - image: hexpm/elixir:<< parameters.tag >>
+    working_directory: ~/repo
+    environment:
+      LC_ALL: C.UTF-8
+    steps:
+      - checkout
+      - run:
+          name: Install hex and rebar
+          command: |
+            mix local.hex --force
+            mix local.rebar --force
+      - restore_cache:
+          keys:
+            - v1-mix-cache-<< parameters.tag >>-{{ checksum "mix.lock" }}
+      - run: mix deps.get
+      - run: mix test
+      - when:
+          condition:
+            matches: { <<: *latest, value: << parameters.tag >> }
+          steps:
+            - run: mix format --check-formatted
+            - run: mix deps.unlock --check-unused
+            - run: mix compile --warnings-as-errors
+            - run: mix docs
+            - run: mix hex.build
+            - run: mix credo -a --strict
+            - run: mix dialyzer
+      - save_cache:
+          key: v1-mix-cache-<< parameters.tag >>-{{ checksum "mix.lock" }}
+          paths:
+            - _build
+            - deps
+
+workflows:
+  checks:
+    jobs:
+      - build-test:
+          name: << matrix.tag >>
+          matrix:
+            parameters:
+              tag: [
+                1.15.4-erlang-26.0.2-alpine-3.18.2,
+                1.14.5-erlang-25.3.2-alpine-3.18.0
+              ]
