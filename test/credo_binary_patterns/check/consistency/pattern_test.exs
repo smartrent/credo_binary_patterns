@@ -7,7 +7,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
   # cases NOT raising issues
   #
 
-  test "it should NOT report violation" do
+  test "Should NOT report violation" do
     """
     defmodule Test do
       def some_function(x) do
@@ -24,11 +24,37 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
   # cases raising issues
   #
 
-  test "it should report a violation" do
+  test "Should raise an issue if bit size comes before the data type" do
     """
     defmodule Test do
       def some_function(x) do
         <<x::32-integer>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issue
+  end
+
+  test "Should raise an issue if bit size is the default of the specified type" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::float-64>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issue
+  end
+
+  test "Should raise an issue if the endian specified is the default of the specified type" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::big-float>>
       end
     end
     """
