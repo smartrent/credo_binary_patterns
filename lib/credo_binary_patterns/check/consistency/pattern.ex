@@ -7,7 +7,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     [value]::[first]-[second]-[third]
     [value]::[first]-[second]-[third]-[fourth]
   """
-  use Credo.Check, base_priority: :high, category: :warning
+  use Credo.Check, base_priority: :high
 
   @signs [:signed, :unsigned]
   @endians [:big, :little, :native]
@@ -45,7 +45,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     second = unwrap(second)
     third = unwrap(third)
     fourth = unwrap(fourth)
-    value_matched = Macro.to_string(value_matched)
+    value_matched = unwrap_value(value_matched)
 
     pattern_info = build_info([first, second, third, fourth])
 
@@ -87,7 +87,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     first = unwrap(first)
     second = unwrap(second)
     third = unwrap(third)
-    value_matched = Macro.to_string(value_matched)
+    value_matched = unwrap_value(value_matched)
 
     pattern_info = build_info([first, second, third])
 
@@ -120,7 +120,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
        ) do
     left = unwrap(left)
     right = unwrap(right)
-    value_matched = Macro.to_string(value_matched)
+    value_matched = unwrap_value(value_matched)
 
     pattern_info = build_info([left, right])
 
@@ -151,10 +151,13 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
 
   defp unwrap(val), do: val
 
+  defp unwrap_value(val), do: Macro.to_string(val) |> String.trim_leading(":")
+
   defp issue_for(:out_of_order, fixed, line, col, issue_meta) do
     format_issue(
       issue_meta,
-      message: "[Bits should come after type] Please re-write this binary pattern as #{fixed}",
+      message:
+        "[Options out of order] Should follow: [endian]-[sign]-[type]-[size]. Please re-write this binary pattern as #{fixed}",
       line_no: line,
       column: col
     )
@@ -232,34 +235,35 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     subj = ""
 
     subj =
-      if is_nil(endian) do
+      if is_nil(endian) or default_endian(type) == endian do
         subj
       else
-        subj <> "#{endian}"
+        subj <> "#{endian}-"
       end
 
     subj =
-      if is_nil(sign) do
+      if is_nil(sign) or default_sign(type) == sign do
         subj
       else
-        subj <> "-#{sign}"
+        subj <> "#{sign}-"
       end
 
     subj =
       if is_nil(type) do
         subj
       else
-        subj <> "-#{type}"
+        subj <> "#{type}-"
       end
 
     subj =
-      if is_nil(size) do
+      if is_nil(size) or default_size(type) == size do
         subj
       else
-        subj <> "-#{size}"
+        subj <> "#{size}"
       end
 
-    "#{value}::#{subj}"
+    result = "#{value}::#{subj}" |> String.trim_trailing("-")
+    "<<#{result}>>"
   end
 
   defp build_info(members) do
