@@ -14,7 +14,7 @@ Add the `:credo_binary_patterns` package to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    {:credo_binary_patterns, "~> 0.1.0", only: [:dev, :test], runtime: false}
+    {:credo_binary_patterns, "~> 0.2.0", only: [:dev, :test], runtime: false}
   ]
 end
 ```

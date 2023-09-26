@@ -1,5 +1,7 @@
 # Changelog
 
-## v0.1.0-dev
+## v0.2.0
 
-Initial release
+* Improve AST parser logic to handle 2, 3, and 4 element patterns.
+* Pretty print the pattern in the correct format, along with the issue.
+* Initial Hex release 🎉
