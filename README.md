@@ -25,26 +25,52 @@ Add the check to your `.credo.exs` configuration file.
 
 ### Ensure pattern consistency
 
-This check will raise an issue if binary patterns .
+This check will raise issues if any binary patterns in your code do not follow the expected ordering or formatting.
 
 ```elixir
 {CredoBinaryPatterns.Check.Consistency.Patterns}
 ```
 
-Suppose you write `<<x::32-integer>>`:
+## Conventions
+
+The following conventions are covered in this library:
+
+  1. Ordering of options in a pattern must be: `endian`, `sign`, `type`, then `size`.
+  2. Do not specify unnecessary options (endian, size, sign/unsigned). See the [Elixir Documentation](https://hexdocs.pm/elixir/1.13.4/Kernel.SpecialForms.html#%3C%3C%3E%3E/1-types) for more information on defaults.)
+
+## Example Issues
+
+Suppose you write the following code:
+
+```elixir
+defmodule Test do
+  def test do
+    # This pattern is out of order (size comes before type)
+    <<x::32-integer>>
+
+    # This pattern does not need to specify the size (integers default to `8`)
+    <<x::integer-8>>
+
+    # This pattens does not need to specify the endian (integers default to `big`)
+    <<x::big-integer-16>>
+  end
+end
+```
+
+Credo will warn you about the formatting issues:
 
 ```
 $ mix credo
 
-┃  Consistency
-┃
-┃ [C] ↘ Bla bla bla.
-┃       lib/bla:1:2
+  Consistency
+┃ 
+┃ [C] ↗ [Unneeded endian specified] Please re-write this binary pattern as <<x::integer-16>>
+┃       test.ex:10:8 #(Test.test)
+┃ [C] ↗ [Unneeded size specified] Please re-write this binary pattern as <<x::integer>>
+┃       test.ex:7:8 #(Test.test)
+┃ [C] ↗ [Options out of order] Should follow: [endian]-[sign]-[type]-[size]. Please re-write this binary pattern as <<x::integer-32>>
+┃       test.ex:4:8 #(Test.test)
 ```
-
-## Conventions
-
-Talk about  conventions...
 
 ## License
 
