@@ -1,7 +1,7 @@
 defmodule CredoBinaryPatterns.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @source_url "https://github.com/smartrent/credo_binary_patterns"
 
   def project do
