@@ -194,7 +194,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp determine_issue(value, pattern_info, original_members, line, col, meta) do
     cond do
       # Bits must come AFTER the type/other members of the pattern
-      not in_correct_order?(original_members) ->
+      not in_correct_order?(pattern_info, original_members) ->
         issue_for(:out_of_order, stringify(value, pattern_info), line, col, meta)
 
       # Check if the size specified in the pattern is the default size of the type
@@ -216,53 +216,45 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   # The general order should always be: [endian]-[sign]-[type]-[size]
   # What we do here, is rank each component type with a numeric value corresponding to the proper ordering.
   # If we sort this ranked list, and the result does not match the original list, the pattern is out of order.
-  defp in_correct_order?(components) when is_list(components) do
+  defp in_correct_order?(pattern_info, components) when is_list(components) do
+    # special case, if the type is a binary, size comes before type!
+    is_binary? = pattern_info.type in [:bytes, :binary]
+    type_order = if is_binary?, do: 4, else: 3
+    size_order = if is_binary?, do: 3, else: 4
+
     components_ranked =
       Enum.map(components, fn c ->
         case get_component_type(c) do
           :endian -> 1
           :sign -> 2
-          :type -> 3
-          :size -> 4
+          :type -> type_order
+          :size -> size_order
         end
       end)
 
     Enum.sort(components_ranked) == components_ranked
   end
 
-  # Proper format of the pattern as a string
-  defp stringify(value, %{type: type, size: size, endian: endian, sign: sign}) do
-    subj = ""
-
-    subj =
-      if is_nil(endian) or default_endian(type) == endian do
-        subj
+  # Proper format of the pattern as a string, used to suggest corrections
+  defp stringify(value, pattern_info) do
+    # Ordering depends on the type, if byte/binary, size comes first
+    order =
+      if pattern_info.type in [:binary, :bytes] do
+        [:endian, :sign, :size, :type]
       else
-        subj <> "#{endian}-"
+        [:endian, :sign, :type, :size]
       end
 
-    subj =
-      if is_nil(sign) or default_sign(type) == sign do
-        subj
-      else
-        subj <> "#{sign}-"
-      end
+    result =
+      Enum.reduce(order, "", fn key, acc ->
+        if is_nil(pattern_info[key]) or pattern_info[key] == default(key, pattern_info.type) do
+          acc
+        else
+          acc <> "#{pattern_info[key]}-"
+        end
+      end)
 
-    subj =
-      if is_nil(type) do
-        subj
-      else
-        subj <> "#{type}-"
-      end
-
-    subj =
-      if is_nil(size) or default_size(type) == size do
-        subj
-      else
-        subj <> "#{size}"
-      end
-
-    result = "#{value}::#{subj}" |> String.trim_trailing("-")
+    result = "#{value}::#{result}" |> String.trim_trailing("-")
     "<<#{result}>>"
   end
 
@@ -272,6 +264,16 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     endian = Enum.find(members, &endian_option?/1)
     size = Enum.find(members, &size_option?/1)
     %{type: type, size: size, sign: sign, endian: endian}
+  end
+
+  # Helper that routes to the proper "defaults" function below
+  defp default(component_name, component_value) do
+    case component_name do
+      :size -> default_size(component_value)
+      :endian -> default_endian(component_value)
+      :sign -> default_sign(component_value)
+      _ -> :no_default
+    end
   end
 
   defp default_size(:integer), do: 8
