@@ -145,6 +145,10 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     {ast, issues}
   end
 
+  defp unwrap({:size, _, [value]}) do
+    {:size, unwrap(value)}
+  end
+
   defp unwrap({atom_name, _, _}) do
     atom_name
   end
@@ -191,17 +195,66 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     )
   end
 
-  defp determine_issue(value, pattern_info, original_members, line, col, meta) do
+  defp issue_for(:no_size_with_bytes, value, size_constant, line, col, issue_meta) do
+    format_issue(
+      issue_meta,
+      message:
+        "[Do not use size with `bytes`] Please re-write this binary pattern using as <<#{value}::binary-size(#{size_constant})>>",
+      line_no: line,
+      column: col
+    )
+  end
+
+  defp issue_for(:no_constants_with_binary, value, size_constant, line, col, issue_meta) do
+    format_issue(
+      issue_meta,
+      message:
+        "[Do not use bare sizes with `binary`] Please re-write this binary pattern using as <<#{value}::#{size_constant}-bytes>>",
+      line_no: line,
+      column: col
+    )
+  end
+
+  # Special cases for binary
+  defp determine_issue(value, pattern_info, original_members, line, col, meta)
+       when pattern_info.type == :binary do
     cond do
-      # Bits must come AFTER the type/other members of the pattern
+      not is_tuple(pattern_info.size) ->
+        issue_for(:no_constants_with_binary, value, pattern_info.size, line, col, meta)
+
       not in_correct_order?(pattern_info, original_members) ->
         issue_for(:out_of_order, stringify(value, pattern_info), line, col, meta)
 
-      # Check if the size specified in the pattern is the default size of the type
+      true ->
+        nil
+    end
+  end
+
+  # Special cases for bytes
+  defp determine_issue(value, pattern_info, original_members, line, col, meta)
+       when pattern_info.type == :bytes do
+    cond do
+      is_tuple(pattern_info.size) ->
+        {_size, size_constant} = pattern_info.size
+        issue_for(:no_size_with_bytes, value, size_constant, line, col, meta)
+
+      not in_correct_order?(pattern_info, original_members) ->
+        issue_for(:out_of_order, stringify(value, pattern_info), line, col, meta)
+
+      true ->
+        nil
+    end
+  end
+
+  # All other pattern types (integers, floats, bits, etc.)
+  defp determine_issue(value, pattern_info, original_members, line, col, meta) do
+    cond do
+      not in_correct_order?(pattern_info, original_members) ->
+        issue_for(:out_of_order, stringify(value, pattern_info), line, col, meta)
+
       default_size(pattern_info.type) == pattern_info.size ->
         issue_for(:default_size, stringify(value, pattern_info), line, col, meta)
 
-      # Check if the sign specified in the pattern is the default sign for the type
       default_sign(pattern_info.type) == pattern_info.sign ->
         issue_for(:default_sign, stringify(value, pattern_info), line, col, meta)
 
@@ -218,9 +271,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   # If we sort this ranked list, and the result does not match the original list, the pattern is out of order.
   defp in_correct_order?(pattern_info, components) when is_list(components) do
     # special case, if the type is a binary, size comes before type!
-    is_binary? = pattern_info.type in [:bytes, :binary]
-    type_order = if is_binary?, do: 4, else: 3
-    size_order = if is_binary?, do: 3, else: 4
+    is_bytes? = pattern_info.type == :bytes
+    type_order = if is_bytes?, do: 4, else: 3
+    size_order = if is_bytes?, do: 3, else: 4
 
     components_ranked =
       Enum.map(components, fn c ->
@@ -239,7 +292,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp stringify(value, pattern_info) do
     # Ordering depends on the type, if byte/binary, size comes first
     order =
-      if pattern_info.type in [:binary, :bytes] do
+      if pattern_info.type == :bytes do
         [:endian, :sign, :size, :type]
       else
         [:endian, :sign, :type, :size]
@@ -250,7 +303,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
         if is_nil(pattern_info[key]) or pattern_info[key] == default(key, pattern_info.type) do
           acc
         else
-          acc <> "#{pattern_info[key]}-"
+          acc <> "#{maybe_stringify_tuple(pattern_info[key])}-"
         end
       end)
 
@@ -306,7 +359,10 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp type_option?(c), do: c in @types
   defp sign_option?(c), do: c in @signs
   defp endian_option?(c), do: c in @endians
-  defp size_option?(c), do: is_integer(c)
+  defp size_option?(c), do: is_integer(c) or is_tuple(c)
+
+  defp maybe_stringify_tuple({_, raw_value}), do: "size(#{raw_value})"
+  defp maybe_stringify_tuple(value), do: value
 
   defp get_component_type(c) do
     cond do
@@ -314,7 +370,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
       sign_option?(c) -> :sign
       type_option?(c) -> :type
       size_option?(c) -> :size
-      :size -> :size
+      is_tuple(c) -> :size
     end
   end
 end
