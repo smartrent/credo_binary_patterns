@@ -14,7 +14,7 @@ Add the `:credo_binary_patterns` package to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    {:credo_binary_patterns, "~> 0.2.0", only: [:dev, :test], runtime: false}
+    {:credo_binary_patterns, "~> 0.2.1", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -28,7 +28,7 @@ Add the check to your `.credo.exs` configuration file.
 This check will raise issues if any binary patterns in your code do not follow the expected ordering or formatting.
 
 ```elixir
-{CredoBinaryPatterns.Check.Consistency.Patterns}
+{CredoBinaryPatterns.Check.Consistency.Pattern}
 ```
 
 ## Conventions
