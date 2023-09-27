@@ -62,4 +62,32 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
     |> run_check(@described_check)
     |> assert_issue
   end
+
+  test "Should not raise an issue if size comes before 'bytes' or 'binary'" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::16-bytes>>
+        <<x::16-binary>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> refute_issues
+  end
+
+  test "Should raise an issue if size comes after 'bytes' or 'binary'" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::bytes-16>>
+        <<x::binary-16>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issues
+  end
 end
