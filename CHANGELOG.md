@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.2
+
+* Create more specific rules around `bytes`, `binary`, and `size(x)` in patterns. ([#7](https://github.com/smartrent/credo_binary_patterns/pull/7)).
+* Fix not handling `unit` correctly.
+
 ## v0.2.1
 
 * Adds special case for `bytes` and `binary` options. Size should be specified before these types.
