@@ -57,6 +57,32 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
     |> assert_issue
   end
 
+  test "Should raise an issue by assuming the default type is integer" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::big-unsigned-32>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issue
+  end
+
+  test "Should NOT raise an issue by assuming the default type is integer" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::little-32>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> refute_issues
+  end
+
   ## Bytes
 
   test "Should NOT raise an issue for pattern <<[constant]-bytes>>" do
