@@ -329,6 +329,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     end
   end
 
+  defp default_size(nil), do: 8
   defp default_size(:integer), do: 8
   defp default_size(:float), do: 64
   defp default_size(:bitstring), do: 1
@@ -338,6 +339,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp default_size(:utf32), do: 32
   defp default_size(_), do: :none
 
+  defp default_endian(nil), do: :big
   defp default_endian(:integer), do: :big
   defp default_endian(:float), do: :big
   defp default_endian(:utf8), do: :big
@@ -347,6 +349,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp default_endian(:bits), do: :none
   defp default_endian(_), do: :none
 
+  defp default_sign(nil), do: :unsigned
   defp default_sign(:integer), do: :unsigned
   defp default_sign(:float), do: :unsigned
   defp default_sign(:utf8), do: :unsigned
