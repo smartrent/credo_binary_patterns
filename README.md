@@ -14,7 +14,7 @@ Add the `:credo_binary_patterns` package to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    {:credo_binary_patterns, "~> 0.2.1", only: [:dev, :test], runtime: false}
+    {:credo_binary_patterns, "~> 0.2.2", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -31,14 +31,68 @@ This check will raise issues if any binary patterns in your code do not follow t
 {CredoBinaryPatterns.Check.Consistency.Pattern}
 ```
 
-## Conventions
+## Conventions Checked By This Library
 
-The following conventions are covered in this library:
+### Ordering of Options
 
-  1. Ordering of options in a pattern must be: `endian`, `sign`, `type`, then `size`.
-  2. Do not specify unnecessary options (endian, size, sign/unsigned). See the [Elixir Documentation](https://hexdocs.pm/elixir/1.13.4/Kernel.SpecialForms.html#%3C%3C%3E%3E/1-types) for more information on defaults.)
+For `float`, `integer`, and `binary` patterns should follow this ordering of options:
 
-## Example Issues
+```
+<<x::[endian]-[sign]-[type]-[size]>>
+```
+
+When using `bytes`, the size comes **_before_** the type option:
+
+```
+<<x::16-bytes>>
+```
+
+### Do not specify unnecessary options
+
+Avoid providing default sizes, endians, or sign options with their respective types.
+
+For example:
+
+```elixir
+# Incorrect - integers default to 8 bits
+<<x::integer-8>>
+
+# Incorrect - integers default to big-endian
+<<x::big-integer>>
+```
+
+See the [Elixir Documentation](https://hexdocs.pm/elixir/1.13.4/Kernel.SpecialForms.html#%3C%3C%3E%3E/1-types) for more information on defaults.)
+
+### Do not use `size()` with `bytes`
+
+If you need to use `size()`, use the `binary` type instead.
+
+```elixir
+# Incorrect
+<<x::size(16)-bytes>>
+
+# Re-write as `binary` if you want to use `size`
+<<x::binary-size(16)>>
+
+# This is also a valid re-write
+<<x::16-bytes>>
+```
+
+### Do not use bare sizes with `binary`
+
+If you use bare numeric values as a size in a `binary` pattern, consider using `bytes` instead. Or, if consistent with the rest of the pattern, use `size()`.
+```elixir
+# Incorrect
+<<x::binary-16>>
+
+# Re-write as `bytes`
+<<x::16-bytes>>
+
+# This is also a valid re-write
+<<x::binary-size(16)>>
+```
+
+## Example Issue Output
 
 Suppose you write the following code:
 
