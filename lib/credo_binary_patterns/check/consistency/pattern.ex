@@ -19,6 +19,43 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     Credo.Code.postwalk(source_file, &traverse(&1, &2, issue_meta))
   end
 
+  # 5 elements
+  defp traverse(
+         {:"::", [line: pattern_line, column: pattern_col],
+          [
+            value_matched,
+            {:-, _,
+             [
+               {:-, _,
+                [
+                  {:-, _,
+                   [
+                     {:-, _,
+                      [
+                        first,
+                        second
+                      ]},
+                     third
+                   ]},
+                  fourth
+                ]},
+               fifth
+             ]}
+          ]} = ast,
+         issues,
+         issue_meta
+       ) do
+    process_traverse(
+      value_matched,
+      [first, second, third, fourth, fifth],
+      pattern_line,
+      pattern_col,
+      issue_meta,
+      issues,
+      ast
+    )
+  end
+
   # 4 elements
   defp traverse(
          {:"::", [line: pattern_line, column: pattern_col],
@@ -41,29 +78,15 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
          issues,
          issue_meta
        ) do
-    first = unwrap(first)
-    second = unwrap(second)
-    third = unwrap(third)
-    fourth = unwrap(fourth)
-    value_matched = unwrap_value(value_matched)
-
-    pattern_info = build_info([first, second, third, fourth])
-
-    maybe_issue =
-      determine_issue(
-        value_matched,
-        pattern_info,
-        [first, second, third, fourth],
-        pattern_line,
-        pattern_col,
-        issue_meta
-      )
-
-    if maybe_issue do
-      {ast, [maybe_issue | issues]}
-    else
-      {ast, issues}
-    end
+    process_traverse(
+      value_matched,
+      [first, second, third, fourth],
+      pattern_line,
+      pattern_col,
+      issue_meta,
+      issues,
+      ast
+    )
   end
 
   # 3 elements
@@ -84,28 +107,15 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
          issues,
          issue_meta
        ) do
-    first = unwrap(first)
-    second = unwrap(second)
-    third = unwrap(third)
-    value_matched = unwrap_value(value_matched)
-
-    pattern_info = build_info([first, second, third])
-
-    maybe_issue =
-      determine_issue(
-        value_matched,
-        pattern_info,
-        [first, second, third],
-        pattern_line,
-        pattern_col,
-        issue_meta
-      )
-
-    if maybe_issue do
-      {ast, [maybe_issue | issues]}
-    else
-      {ast, issues}
-    end
+    process_traverse(
+      value_matched,
+      [first, second, third],
+      pattern_line,
+      pattern_col,
+      issue_meta,
+      issues,
+      ast
+    )
   end
 
   # 2 elements
@@ -118,35 +128,57 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
          issues,
          issue_meta
        ) do
-    left = unwrap(left)
-    right = unwrap(right)
-    value_matched = unwrap_value(value_matched)
-
-    pattern_info = build_info([left, right])
-
-    maybe_issue =
-      determine_issue(
-        value_matched,
-        pattern_info,
-        [left, right],
-        pattern_line,
-        pattern_col,
-        issue_meta
-      )
-
-    if maybe_issue != nil do
-      {ast, [maybe_issue | issues]}
-    else
-      {ast, issues}
-    end
+    process_traverse(
+      value_matched,
+      [left, right],
+      pattern_line,
+      pattern_col,
+      issue_meta,
+      issues,
+      ast
+    )
   end
 
   defp traverse(ast, issues, _issue_meta) do
     {ast, issues}
   end
 
+  defp process_traverse(
+         value_matched,
+         elements,
+         pattern_line,
+         pattern_col,
+         issue_meta,
+         issues,
+         ast
+       ) do
+    elements = Enum.map(elements, &unwrap/1)
+    value_matched = unwrap_value(value_matched)
+    pattern_info = build_info(elements)
+
+    maybe_issue =
+      determine_issue(
+        value_matched,
+        pattern_info,
+        elements,
+        pattern_line,
+        pattern_col,
+        issue_meta
+      )
+
+    if maybe_issue do
+      {ast, [maybe_issue | issues]}
+    else
+      {ast, issues}
+    end
+  end
+
   defp unwrap({:size, _, [value]}) do
     {:size, unwrap(value)}
+  end
+
+  defp unwrap({:unit, _, [value]}) do
+    {:unit, unwrap(value)}
   end
 
   defp unwrap({atom_name, _, _}) do
@@ -282,6 +314,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
           :sign -> 2
           :type -> type_order
           :size -> size_order
+          :unit -> size_order + 1
         end
       end)
 
@@ -293,9 +326,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     # Ordering depends on the type, if byte/binary, size comes first
     order =
       if pattern_info.type == :bytes do
-        [:endian, :sign, :size, :type]
+        [:endian, :sign, :size, :unit, :type]
       else
-        [:endian, :sign, :type, :size]
+        [:endian, :sign, :type, :size, :unit]
       end
 
     result =
@@ -316,7 +349,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     sign = Enum.find(members, &sign_option?/1)
     endian = Enum.find(members, &endian_option?/1)
     size = Enum.find(members, &size_option?/1)
-    %{type: type, size: size, sign: sign, endian: endian}
+    unit = Enum.find(members, &unit_option?/1)
+
+    %{type: type, size: size, sign: sign, endian: endian, unit: unit}
   end
 
   # Helper that routes to the proper "defaults" function below
@@ -362,9 +397,11 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp type_option?(c), do: c in @types
   defp sign_option?(c), do: c in @signs
   defp endian_option?(c), do: c in @endians
-  defp size_option?(c), do: is_integer(c) or is_tuple(c)
+  defp size_option?(c), do: is_integer(c) or match?({:size, _}, c)
+  defp unit_option?(c), do: match?({:unit, _}, c)
 
-  defp maybe_stringify_tuple({_, raw_value}), do: "size(#{raw_value})"
+  defp maybe_stringify_tuple({:size, raw_value}), do: "size(#{raw_value})"
+  defp maybe_stringify_tuple({:unit, raw_value}), do: "unit(#{raw_value})"
   defp maybe_stringify_tuple(value), do: value
 
   defp get_component_type(c) do
@@ -373,7 +410,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
       sign_option?(c) -> :sign
       type_option?(c) -> :type
       size_option?(c) -> :size
-      is_tuple(c) -> :size
+      unit_option?(c) -> :unit
     end
   end
 end
