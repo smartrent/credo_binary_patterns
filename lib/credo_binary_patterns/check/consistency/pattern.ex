@@ -188,6 +188,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp unwrap(val), do: val
 
   defp unwrap_value(val), do: Macro.to_string(val) |> String.trim_leading(":")
+  defp unwrap_tuple({_, value}), do: value
 
   defp issue_for(:out_of_order, fixed, line, col, issue_meta) do
     format_issue(
@@ -222,6 +223,16 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     format_issue(
       issue_meta,
       message: "[Unneeded endian specified] Please re-write this binary pattern as #{fixed}",
+      line_no: line,
+      column: col
+    )
+  end
+
+  defp issue_for(:no_size_here, fixed, line, col, issue_meta) do
+    format_issue(
+      issue_meta,
+      message:
+        "[Don't use size with integer/float] Please re-write this binary pattern as #{fixed}",
       line_no: line,
       column: col
     )
@@ -293,6 +304,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
       default_endian(pattern_info.type) == pattern_info.endian ->
         issue_for(:default_endian, stringify(value, pattern_info), line, col, meta)
 
+      is_tuple(pattern_info.size) and is_integer(unwrap_tuple(pattern_info.size)) ->
+        issue_for(:no_size_here, stringify(value, pattern_info), line, col, meta)
+
       true ->
         nil
     end
@@ -336,7 +350,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
         if is_nil(pattern_info[key]) or pattern_info[key] == default(key, pattern_info.type) do
           acc
         else
-          acc <> "#{maybe_stringify_tuple(pattern_info[key])}-"
+          acc <> "#{maybe_stringify_tuple(pattern_info[key], pattern_info.type)}-"
         end
       end)
 
@@ -357,6 +371,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   # Helper that routes to the proper "defaults" function below
   defp default(component_name, component_value) do
     case component_name do
+      :type -> :integer
       :size -> default_size(component_value)
       :endian -> default_endian(component_value)
       :sign -> default_sign(component_value)
@@ -400,9 +415,12 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp size_option?(c), do: is_integer(c) or match?({:size, _}, c)
   defp unit_option?(c), do: match?({:unit, _}, c)
 
-  defp maybe_stringify_tuple({:size, raw_value}), do: "size(#{raw_value})"
-  defp maybe_stringify_tuple({:unit, raw_value}), do: "unit(#{raw_value})"
-  defp maybe_stringify_tuple(value), do: value
+  defp maybe_stringify_tuple({:size, raw_value}, type) when type in [:integer, :float, nil],
+    do: "#{raw_value}"
+
+  defp maybe_stringify_tuple({:size, raw_value}, _), do: "size(#{raw_value})"
+  defp maybe_stringify_tuple({:unit, raw_value}, _), do: "unit(#{raw_value})"
+  defp maybe_stringify_tuple(value, _), do: value
 
   defp get_component_type(c) do
     cond do
