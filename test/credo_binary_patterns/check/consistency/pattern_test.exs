@@ -137,6 +137,19 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
     |> assert_issue
   end
 
+  test "Should raise an issue if size is used with integer" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::little-integer-size(32)>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issue
+  end
+
   ## Binaries
 
   test "Should raise an issue if constants are used with `binary`" do
