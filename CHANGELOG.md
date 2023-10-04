@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.3
+
+* Treat `bitstring`/`bits` with the same rules as `binary`/`bytes` ([#13](https://github.com/smartrent/credo_binary_patterns/pull/13)).
+* Do not allow `size(constant)` with `interger` and `float`.
+
 ## v0.2.2
 
 * Create more specific rules around `bytes`, `binary`, and `size(x)` in patterns. ([#7](https://github.com/smartrent/credo_binary_patterns/pull/7)).
