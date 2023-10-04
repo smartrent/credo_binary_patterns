@@ -258,12 +258,25 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     )
   end
 
+  defp issue_for(:no_constants_with_bitstring, value, size_constant, line, col, issue_meta) do
+    format_issue(
+      issue_meta,
+      message:
+        "[Do not use bare sizes with `bitstring`] Please re-write this binary pattern using as <<#{value}::#{size_constant}-bits>>",
+      line_no: line,
+      column: col
+    )
+  end
+
   # Special cases for binary
   defp determine_issue(value, pattern_info, original_members, line, col, meta)
-       when pattern_info.type == :binary do
+       when pattern_info.type in [:binary, :bitstring] do
     cond do
-      not is_tuple(pattern_info.size) ->
+      not is_tuple(pattern_info.size) and pattern_info.type == :binary ->
         issue_for(:no_constants_with_binary, value, pattern_info.size, line, col, meta)
+
+      not is_tuple(pattern_info.size) and pattern_info.type == :bitstring ->
+        issue_for(:no_constants_with_bitstring, value, pattern_info.size, line, col, meta)
 
       not in_correct_order?(pattern_info, original_members) ->
         issue_for(:out_of_order, stringify(value, pattern_info), line, col, meta)
@@ -339,7 +352,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   defp stringify(value, pattern_info) do
     # Ordering depends on the type, if byte/binary, size comes first
     order =
-      if pattern_info.type == :bytes do
+      if pattern_info.type in [:bytes, :bits] do
         [:endian, :sign, :size, :unit, :type]
       else
         [:endian, :sign, :type, :size, :unit]
