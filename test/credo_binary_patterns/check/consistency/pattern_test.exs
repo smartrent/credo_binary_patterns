@@ -150,6 +150,47 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
     |> assert_issue
   end
 
+  # Bit Strings
+
+  test "Should raise an issue if constants are used with `bitstring`" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::bitstring-16>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issue
+  end
+
+  test "Should raise an issue if size comes before `bitstring`" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::size(16)-bitstring>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> assert_issue
+  end
+
+  test "Should NOT raise an issue for pattern <<x::bitstring-size(...)>>" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::bitstring-size(@something)>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> refute_issues
+  end
+
   ## Binaries
 
   test "Should raise an issue if constants are used with `binary`" do
