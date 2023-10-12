@@ -349,8 +349,34 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   end
 
   # Proper format of the pattern as a string, used to suggest corrections
+  defp stringify(value, %{
+         type: :integer,
+         sign: :unsigned,
+         size: {:size, :size},
+         unit: {:unit, unit_value},
+         endian: nil
+       }),
+       do: "<<" <> value <> "::integer-size(size)-unit(#{unit_value})>>"
+
+  defp stringify(value, %{
+         type: :integer,
+         sign: :signed,
+         size: {:size, size},
+         unit: {:unit, unit_value},
+         endian: nil
+       }),
+       do: "<<" <> value <> "::signed-size(#{size})-unit(#{unit_value})" <> ">>"
+
+  defp stringify(value, %{
+         type: nil,
+         sign: :signed,
+         size: {:size, byte_size},
+         unit: {:unit, unit_value}
+       })
+       when byte_size in [:byte_size, :size],
+       do: "<<" <> value <> "::signed-size(#{byte_size})-unit(#{unit_value})" <> ">>"
+
   defp stringify(value, pattern_info) do
-    # Ordering depends on the type, if byte/binary, size comes first
     order =
       if pattern_info.type in [:bytes, :bits] do
         [:endian, :sign, :size, :unit, :type]
