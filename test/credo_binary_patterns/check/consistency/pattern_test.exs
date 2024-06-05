@@ -83,6 +83,19 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
     |> refute_issues
   end
 
+  test "Should NOT raise an issue when using syntax: <<X-bits>>" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::4-bits>>
+      end
+    end
+    """
+    |> to_source_file
+    |> run_check(@described_check)
+    |> refute_issues
+  end
+
   test "Should NOT raise an issue when using `unit`" do
     """
     defmodule Test do
