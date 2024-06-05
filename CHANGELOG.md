@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.5
+
+* Suggest patterns in the form of `<<x::size(y)>>` to be rewritten as `<<x::y>>`.
+* Fix suggested pattern strings sometimes having a trailing `::` in Credo output.
+
 ## v0.2.4
 
 * Treat `bytes` and `bits` both as units. Fixes a false warning when using: `<<x::4-bits>>`.
