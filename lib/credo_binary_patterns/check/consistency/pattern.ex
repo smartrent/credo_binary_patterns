@@ -329,10 +329,10 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
   # What we do here, is rank each component type with a numeric value corresponding to the proper ordering.
   # If we sort this ranked list, and the result does not match the original list, the pattern is out of order.
   defp in_correct_order?(pattern_info, components) when is_list(components) do
-    # special case, if the type is a binary, size comes before type!
-    is_bytes? = pattern_info.type == :bytes
-    type_order = if is_bytes?, do: 4, else: 3
-    size_order = if is_bytes?, do: 3, else: 4
+    # special case, if the type is a binary or a bitstring size comes before type!
+    is_bytes_or_bits? = pattern_info.type == :bytes || pattern_info.type == :bits
+    type_order = if is_bytes_or_bits?, do: 4, else: 3
+    size_order = if is_bytes_or_bits?, do: 3, else: 4
 
     components_ranked =
       Enum.map(components, fn c ->
