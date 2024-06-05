@@ -139,6 +139,24 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     )
   end
 
+  # Single <<x::size(x)>> pattern
+  defp traverse(
+         {:"::", [line: pattern_line, column: pattern_col],
+          [{value_matched, [line: _, column: _], nil}, {:size, _, [size_value]}]} = ast,
+         issues,
+         issue_meta
+       ) do
+    process_traverse(
+      value_matched,
+      [:size, size_value],
+      pattern_line,
+      pattern_col,
+      issue_meta,
+      issues,
+      ast
+    )
+  end
+
   defp traverse(ast, issues, _issue_meta) do
     {ast, issues}
   end
@@ -238,6 +256,16 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
     )
   end
 
+  defp issue_for(:extraneous_size, fixed, line, col, issue_meta) do
+    format_issue(
+      issue_meta,
+      message:
+        "[Don't use size with a plain value] Please re-write this binary pattern as #{fixed}",
+      line_no: line,
+      column: col
+    )
+  end
+
   defp issue_for(:no_size_with_bytes, value, size_constant, line, col, issue_meta) do
     format_issue(
       issue_meta,
@@ -266,6 +294,10 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
       line_no: line,
       column: col
     )
+  end
+
+  defp determine_issue(value, pattern_info, [:size, _size_value], line, col, meta) do
+    issue_for(:extraneous_size, stringify(value, pattern_info), line, col, meta)
   end
 
   # Special cases for binary
@@ -393,7 +425,7 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
         end
       end)
 
-    result = "#{value}::#{result}" |> String.trim_trailing("-")
+    result = "#{value}::#{result}" |> String.trim_trailing("-") |> String.trim_trailing("::")
     "<<#{result}>>"
   end
 
