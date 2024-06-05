@@ -13,9 +13,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> refute_issues
+    |> refute_issues()
   end
 
   test "Should raise an issue if bit size comes before the data type" do
@@ -26,9 +26,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue if bit size is the default of the specified type" do
@@ -39,9 +39,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue if the endian specified is the default of the specified type" do
@@ -52,9 +52,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue by assuming the default type is integer" do
@@ -65,9 +65,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should NOT raise an issue by assuming the default type is integer" do
@@ -78,9 +78,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> refute_issues
+    |> refute_issues()
   end
 
   test "Should NOT raise an issue when using `unit`" do
@@ -91,9 +91,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> refute_issues
+    |> refute_issues()
   end
 
   ## Bytes
@@ -106,9 +106,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> refute_issues
+    |> refute_issues()
   end
 
   test "Should raise an issue for pattern if `size(x)` is used with `bytes`" do
@@ -119,9 +119,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue if constant size comes after `bytes`" do
@@ -132,9 +132,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue if size is used with integer" do
@@ -145,9 +145,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   # Bit Strings
@@ -160,9 +160,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue if size comes before `bitstring`" do
@@ -173,9 +173,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should NOT raise an issue for pattern <<x::bitstring-size(...)>>" do
@@ -186,9 +186,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> refute_issues
+    |> refute_issues()
   end
 
   ## Binaries
@@ -201,9 +201,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should raise an issue if size comes before `binary`" do
@@ -214,9 +214,9 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> assert_issue
+    |> assert_issue()
   end
 
   test "Should NOT raise an issue for pattern <<x::binary-size(...)>>" do
@@ -227,8 +227,8 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
       end
     end
     """
-    |> to_source_file
+    |> to_source_file()
     |> run_check(@described_check)
-    |> refute_issues
+    |> refute_issues()
   end
 end
