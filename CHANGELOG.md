@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.6
+
+* Fixes an issue where the `:extraneous_size` rule would be raised when using a variable in a `size` expression.
+
 ## v0.2.5
 
 * Suggest patterns in the form of `<<x::size(y)>>` to be rewritten as `<<x::y>>`.
