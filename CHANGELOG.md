@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.4
+
+* Treat `bytes` and `bits` both as units. Fixes a false warning when using: `<<x::4-bits>>`.
+* Bump dependencies and Elixir version in CI.
+* Update code formatting to be more consistent.
+
 ## v0.2.3
 
 * Treat `bitstring`/`bits` with the same rules as `binary`/`bytes` ([#13](https://github.com/smartrent/credo_binary_patterns/pull/13)).
