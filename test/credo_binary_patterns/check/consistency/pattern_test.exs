@@ -176,6 +176,19 @@ defmodule CredoBinaryPatterns.Check.Consistency.PatternTest do
     |> assert_issue()
   end
 
+  test "Should NOT raise an issue if size is used with a variable value" do
+    """
+    defmodule Test do
+      def some_function(x) do
+        <<x::size(variable_value)>>
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(@described_check)
+    |> refute_issues()
+  end
+
   # Bit Strings
 
   test "Should raise an issue if constants are used with `bitstring`" do

@@ -145,7 +145,8 @@ defmodule CredoBinaryPatterns.Check.Consistency.Pattern do
           [{value_matched, [line: _, column: _], nil}, {:size, _, [size_value]}]} = ast,
          issues,
          issue_meta
-       ) do
+       )
+       when is_integer(size_value) do
     process_traverse(
       value_matched,
       [:size, size_value],
