@@ -1,0 +1,5 @@
+{
+    "env": {
+        "ANTHROPIC_CUSTOM_HEADERS": "x-portkey-metadata: {\"repo\": \"credo_binary_patterns\"}"
+    }
+}
