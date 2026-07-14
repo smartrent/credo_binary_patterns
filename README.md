@@ -1,6 +1,6 @@
 # CredoBinaryPatterns
 
-[![CircleCI](https://circleci.com/gh/smartrent/credo_binary_patterns.svg?style=svg)](https://circleci.com/gh/smartrent/credo_binary_patterns)
+[![Elixir CI](https://github.com/smartrent/credo_binary_patterns/actions/workflows/ci.yaml/badge.svg)](https://github.com/smartrent/credo_binary_patterns/actions/workflows/ci.yaml)
 [![Hex version](https://img.shields.io/hexpm/v/credo_binary_patterns.svg "Hex version")](https://hex.pm/packages/credo_binary_patterns)
 
 The `:credo_binary_patterns` library contains Credo checks for

@@ -1,0 +1,80 @@
+name: Elixir CI
+
+on:
+  push:
+    branches:
+      - main
+      - hotfix/[0-9]+.[0-9]+.[0-9]+
+      - release/[0-9]+.[0-9]+.[0-9]+
+    tags:
+      - "*"
+  pull_request:
+    types: [synchronize, opened, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.elixir }}-erlang-${{ matrix.erlang }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: "1.16.2"
+            erlang: "26.2.4"
+            latest: true
+          - elixir: "1.15.7"
+            erlang: "26.1.2"
+            latest: false
+          - elixir: "1.14.5"
+            erlang: "25.3.2"
+            latest: false
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: erlef/setup-beam@fc68ffb90438ef2936bbb3251622353b3dcb2f93 # v1.24.0
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.erlang }}
+
+      - name: Restore deps/build cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.erlang }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ matrix.elixir }}-${{ matrix.erlang }}-
+
+      - run: mix deps.get
+
+      - run: mix test
+
+      - name: Quality checks (latest only)
+        if: matrix.latest
+        run: |
+          mix format --check-formatted
+          mix deps.unlock --check-unused
+          mix compile --warnings-as-errors
+          mix credo -a --strict
+          mix dialyzer
+        env:
+          MIX_ENV: test
+
+      - name: Docs + hex build (latest only)
+        if: matrix.latest
+        run: |
+          mix deps.get
+          mix docs
+          mix hex.build
+        env:
+          MIX_ENV: docs
